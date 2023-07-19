@@ -1,12 +1,12 @@
 {
   "name": "lamba",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A wrapper over an Express server AWS SAM functions",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Marko Kjalasan",
+  "author": "Marko Calasan",
   "repository": {
     "type": "git",
     "url": "https://github.com/calasanmarko/lamba"

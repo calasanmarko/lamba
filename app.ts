@@ -11,15 +11,19 @@ interface Route {
 }
 
 interface Config {
+    port: number,
     routes: Route[],
     env: {[key: string]: string} | undefined
 }
 
-const port = 6987;
 const app = express();
 
 const configPath = './lamba.json' || process.argv[2];
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8')) as Config;
+
+if (!config.port) {
+    config.port = 6987;
+}
 
 for (let key in config.env) {
     process.env[key] = config.env[key];
@@ -30,9 +34,8 @@ config.routes.forEach(route => {
         for (let entry in require.cache) {
             delete require.cache[entry];
         }
+        console.log(`%cRequest received for ${route.endpoint}`, 'color: gold');
         const handler: Handler = (await import(process.cwd() + route.path)).lambdaHandler;
-
-        res.header('Content-Type', 'application/json');
 
         let event: APIGatewayProxyEvent = {
             body: req.body,
@@ -78,17 +81,35 @@ config.routes.forEach(route => {
             resource: ''
         };
 
-        try {
-            console.log('done');
-            handler(event).then((result) => {
+        res.header('Content-Type', 'application/json');
+        handler(event)
+            .then(result => {
+                console.log(`%c${result.statusCode}: %cResponse for ${req.method} request at %c${req.path}\n`,
+                    'color: mediumspringgreen; font-weight: bold',
+                    'color: mediumspringgreen',
+                    'color: mediumspringgreen; font-weight: bold; text-decoration: underline'
+                );
                 res.status(result.statusCode).send(result.body);
+            }).catch(error => {
+                console.log(`%c502: %cResponse for ${req.method} request at %c${req.path}`,
+                    'color: #fc5b21; font-weight: bold',
+                    'color: #fc5b21',
+                    'color: #fc5b21; font-weight: bold; text-decoration: underline'
+                );
+
+                let errorString = JSON.stringify(error);
+                console.log(`%c${errorString}\n`, 'color: #ff8772');
+                res.status(502).send(errorString);
             });
-        } catch (error) {
-            res.status(502).send(error);
-        };
     });
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
+app.listen(config.port, () => {
+    console.log(`%cLamba server initializing on port ${config.port}...`, 'color: gold; font-weight: bold;');
+    console.log(`%c${config.routes.length} routes found in ${configPath}`, `color: gold`);
+    console.log(' ');
+    config.routes.forEach(route => {
+        console.log(`%cLamba listening on endpoint: %chttp://localhost:${config.port}${route.endpoint}`, 'color: gold', 'color: gold; font-weight: bold; text-decoration: underline');
+    });
+    console.log(' ');
 });
