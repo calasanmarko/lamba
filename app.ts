@@ -18,7 +18,7 @@ interface Config {
 const port = 6987;
 const app = express();
 
-const configPath = './lamb.json' || process.argv[2];
+const configPath = './lamba.json' || process.argv[2];
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8')) as Config;
 
 for (let key in config.env) {
@@ -26,7 +26,10 @@ for (let key in config.env) {
 }
 
 config.routes.forEach(route => {
-    app.get(route.endpoint, async (req, res) => {
+    app.all(route.endpoint, async (req, res) => {
+        for (let entry in require.cache) {
+            delete require.cache[entry];
+        }
         const handler: Handler = (await import(process.cwd() + route.path)).lambdaHandler;
 
         res.header('Content-Type', 'application/json');
