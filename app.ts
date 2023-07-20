@@ -29,18 +29,28 @@ for (let key in config.env) {
     process.env[key] = config.env[key];
 }
 
+const fullUrl = (req: express.Request) => {
+    return `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+};
+
 config.routes.forEach(route => {
     app.all(route.endpoint, async (req, res) => {
         for (let entry in require.cache) {
             delete require.cache[entry];
         }
-        console.log(`%cRequest received for ${route.endpoint}`, 'color: gold');
+        console.log(`%cRouted %c${fullUrl(req)}%c -> %c${route.endpoint}%c -> %c${route.path}`,
+            'color: gold',
+            'color: gold; font-weight: bold; text-decoration: underline',
+            'color: gold',
+            'color: gold; font-weight: bold; text-decoration: underline',
+            'color: gold',
+            'color: gold; font-weight: bold; text-decoration: underline');
         const handler: Handler = (await import(process.cwd() + route.path)).lambdaHandler;
 
         let event: APIGatewayProxyEvent = {
             body: req.body,
-            headers: req.headers,
-            multiValueHeaders: undefined,
+            headers: {},
+            multiValueHeaders: {},
             httpMethod: req.method,
             isBase64Encoded: false,
             path: req.baseUrl,
@@ -81,17 +91,26 @@ config.routes.forEach(route => {
             resource: ''
         };
 
+        for (let header in req.headers) {
+            event.headers[header] = req.headers[header]?.toString();
+        }
+
         res.header('Content-Type', 'application/json');
         handler(event)
             .then(result => {
-                console.log(`%c${result.statusCode}: %cResponse for ${req.method} request at %c${req.path}\n`,
+                console.log(`%c${result.statusCode}: %cResponse for ${req.method} request at %c${fullUrl(req)}\n`,
                     'color: mediumspringgreen; font-weight: bold',
                     'color: mediumspringgreen',
                     'color: mediumspringgreen; font-weight: bold; text-decoration: underline'
                 );
+
+                for (let header in result.headers) {
+                    res.header(header, result.headers[header].toString());
+                }
+
                 res.status(result.statusCode).send(result.body);
             }).catch(error => {
-                console.log(`%c502: %cResponse for ${req.method} request at %c${req.path}`,
+                console.log(`%c502: %cResponse for ${req.method} request at %c${fullUrl(req)}`,
                     'color: #fc5b21; font-weight: bold',
                     'color: #fc5b21',
                     'color: #fc5b21; font-weight: bold; text-decoration: underline'
