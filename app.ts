@@ -55,7 +55,7 @@ config.routes.forEach(route => {
             isBase64Encoded: false,
             path: req.baseUrl,
             pathParameters: req.params,
-            queryStringParameters: req.params,
+            queryStringParameters: req.query as {[key: string]: string},
             multiValueQueryStringParameters: null,
             stageVariables: null,
             requestContext: {
