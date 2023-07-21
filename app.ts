@@ -33,11 +33,14 @@ const fullUrl = (req: express.Request) => {
     return `${req.protocol}://${req.get('host')}${req.originalUrl}`;
 };
 
+app.use(express.text({ type: '*/*' }))
+
 config.routes.forEach(route => {
     app.all(route.endpoint, async (req, res) => {
         for (let entry in require.cache) {
             delete require.cache[entry];
         }
+        
         console.log(`%cRouted %c${fullUrl(req)}%c -> %c${route.endpoint}%c -> %c${route.path}`,
             'color: gold',
             'color: gold; font-weight: bold; text-decoration: underline',
@@ -48,7 +51,7 @@ config.routes.forEach(route => {
         const handler: Handler = (await import(process.cwd() + route.path)).lambdaHandler;
 
         let event: APIGatewayProxyEvent = {
-            body: req.body,
+            body: typeof(req.body) === 'string' ? req.body : null,
             headers: {},
             multiValueHeaders: {},
             httpMethod: req.method,
@@ -95,7 +98,6 @@ config.routes.forEach(route => {
             event.headers[header] = req.headers[header]?.toString();
         }
 
-        res.header('Content-Type', 'application/json');
         handler(event)
             .then(result => {
                 console.log(`%c${result.statusCode}: %cResponse for ${req.method} request at %c${fullUrl(req)}\n`,
