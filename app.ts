@@ -33,6 +33,16 @@ const fullUrl = (req: express.Request) => {
     return `${req.protocol}://${req.get('host')}${req.originalUrl}`;
 };
 
+const printError = (req: express.Request, statusCode: number, error: any) => {
+    console.log(`%c${statusCode}: %cResponse for ${req.method} request at %c${fullUrl(req)}`,
+        'color: #fc5b21; font-weight: bold',
+        'color: #fc5b21',
+        'color: #fc5b21; font-weight: bold; text-decoration: underline'
+    );
+
+    console.log(`%c${error}\n`, 'color: #ff8772');
+};
+
 app.use(express.text({ type: '*/*' }))
 
 config.routes.forEach(route => {
@@ -100,11 +110,15 @@ config.routes.forEach(route => {
 
         handler(event)
             .then(result => {
-                console.log(`%c${result.statusCode}: %cResponse for ${req.method} request at %c${fullUrl(req)}\n`,
-                    'color: mediumspringgreen; font-weight: bold',
-                    'color: mediumspringgreen',
-                    'color: mediumspringgreen; font-weight: bold; text-decoration: underline'
-                );
+                if (result.statusCode < 400) {
+                    console.log(`%c${result.statusCode}: %cResponse for ${req.method} request at %c${fullUrl(req)}\n`,
+                        'color: mediumspringgreen; font-weight: bold',
+                        'color: mediumspringgreen',
+                        'color: mediumspringgreen; font-weight: bold; text-decoration: underline'
+                    );
+                } else {
+                    printError(req, result.statusCode, result.body);
+                }
 
                 for (let header in result.headers) {
                     res.header(header, result.headers[header].toString());
@@ -112,15 +126,8 @@ config.routes.forEach(route => {
 
                 res.status(result.statusCode).send(result.body);
             }).catch(error => {
-                console.log(`%c502: %cResponse for ${req.method} request at %c${fullUrl(req)}`,
-                    'color: #fc5b21; font-weight: bold',
-                    'color: #fc5b21',
-                    'color: #fc5b21; font-weight: bold; text-decoration: underline'
-                );
-
-                let errorString = JSON.stringify(error);
-                console.log(`%c${errorString}\n`, 'color: #ff8772');
-                res.status(502).send(errorString);
+                printError(req, 500, JSON.stringify(error));
+                res.status(500).send(JSON.stringify(error));
             });
     });
 });

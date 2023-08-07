@@ -1,8 +1,8 @@
 {
   "name": "lamba",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "A wrapper over an Express server AWS SAM functions",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
