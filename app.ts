@@ -43,7 +43,7 @@ const printError = (req: express.Request, statusCode: number, error: any) => {
     console.log(`%c${error}\n`, 'color: #ff8772');
 };
 
-app.use(express.text({ type: '*/*' }))
+app.use(express.text({ type: '*/*', limit: '50mb' }))
 
 config.routes.forEach(route => {
     app.all(route.endpoint, async (req, res) => {
