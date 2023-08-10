@@ -43,12 +43,33 @@ const printError = (req: express.Request, statusCode: number, error: any) => {
     console.log(`%c${error}\n`, 'color: #ff8772');
 };
 
+let modifiedDates: { [path: string]: number } = {};
+
+const hasFileChanged = async (path: string): Promise<boolean> => {
+    return new Promise((resolve, reject) => {
+        fs.stat(path, (err, stats) => {
+            if (err) {
+                reject(err);
+            }
+
+            if (!modifiedDates[path] || modifiedDates[path] !== stats.mtimeMs) {
+                modifiedDates[path] = stats.mtimeMs;
+                resolve(true);
+            } else {
+                resolve(false);
+            }
+        });
+    });
+};
+
 app.use(express.text({ type: '*/*', limit: '50mb' }))
 
 config.routes.forEach(route => {
     app.all(route.endpoint, async (req, res) => {
         for (let entry in require.cache) {
-            delete require.cache[entry];
+            if (await hasFileChanged(entry)) {
+                delete require.cache[entry];
+            }
         }
         
         console.log(`%cRouted %c${fullUrl(req)}%c -> %c${route.endpoint}%c -> %c${route.path}`,
