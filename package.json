@@ -1,6 +1,6 @@
 {
   "name": "lamba",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "A wrapper over an Express server AWS SAM functions",
   "main": "app.js",
   "scripts": {
